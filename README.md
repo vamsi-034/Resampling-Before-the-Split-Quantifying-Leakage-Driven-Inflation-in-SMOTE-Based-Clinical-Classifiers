@@ -1,78 +1,73 @@
-# SMOTE Leakage Quantification — Experiment Code
+# Resampling Before the Split: Quantifying Leakage-Driven Inflation in SMOTE-Based Clinical Classifiers
 
-Implements the two pipelines described in the paper plan and runs the
-full dataset x classifier x pipeline x seed grid.
+## Experiment Code
+
+This repository implements the experimental pipelines used to investigate how applying SMOTE before train-test splitting can inflate reported clinical classification performance.
 
 ## Files
 
-- `data_loaders.py` — loads the three clinical datasets (Pima Diabetes,
-  Cleveland Heart Disease, Wisconsin Breast Cancer). Datasets are
-  cached under `data/`. Add a fourth dataset by writing a loader with
-  the same `(X, y, meta)` signature and registering it in
-  `ALL_DATASETS`.
-- `pipelines.py` — `leaky_pipeline` (SMOTE before split) and
-  `correct_pipeline` (SMOTE after split, training fold only). This is
-  the core experimental manipulation; everything else holds constant
-  around it.
-- `run_experiment.py` — runs the full grid, writes `results_raw.csv`
-  (one row per dataset x classifier x pipeline x seed run).
-- `analysis.py` — computes per-combination mean delta (leaky −
-  correct), paired Wilcoxon signed-rank tests, Cliff's delta effect
-  sizes, writes `delta_table.csv`, and runs the inflation-predictor
-  OLS regression (delta ~ imbalance ratio + log(n) + n_features).
-- `make_plots.py` — generates `fig1_distributions.png` (leaked vs
-  correct metric spread per dataset/classifier) and
-  `fig2_inflation_bars.png` (ranked mean inflation).
+- `data_loaders.py`: Loads clinical datasets, including Pima Diabetes, Cleveland Heart Disease, and Wisconsin Breast Cancer. Cached datasets are stored under `data/`.
+- `pipelines.py`: Implements the leaky pipeline (SMOTE before splitting) and the correct pipeline (SMOTE applied only to the training fold).
+- `run_experiment.py`: Runs the experiment grid and writes raw results to CSV.
+- `analysis.py`: Computes mean performance differences between the leaky and correct pipelines, paired Wilcoxon signed-rank tests, Cliff's delta effect sizes, and an exploratory OLS regression.
+- `make_plots.py`: Generates performance distribution and inflation comparison figures.
 
-## Run order
+## Requirements
+
+Install the required Python packages:
 
 ```bash
 pip install -r requirements.txt
+```
 
-# full run — 30 seeds per combination, ~10-15 min on CPU
-python run_experiment.py --n-seeds 30
+## Running the Experiments
 
-# or a fast check first
+Run a quick test:
+
+```bash
 python run_experiment.py --n-seeds 5 --out results_smoketest.csv
+```
 
+Run the full experiment with 30 seeds:
+
+```bash
+python run_experiment.py --n-seeds 30
+```
+
+Analyze the results and generate plots:
+
+```bash
 python analysis.py --in results_raw.csv
 python make_plots.py --raw results_raw.csv --delta delta_table.csv
 ```
 
-## k-neighbors ablation
+Run these commands from the directory containing the relevant Python scripts, or adjust the paths if your scripts are stored in the `pys/` directory.
 
-To check whether inflation magnitude depends on SMOTE's `k`, rerun
-with different `--k-neighbors` values and compare `delta_table.csv`
-across runs:
+## SMOTE k-Neighbors Ablation
 
-```bash
-for k in 3 5 7 10; do
-  python run_experiment.py --n-seeds 15 --k-neighbors $k --out results_k${k}.csv
-done
+To investigate how SMOTE's `k_neighbors` parameter affects performance inflation, run experiments with different values of `k`.
+
+Example for Windows Command Prompt:
+
+```cmd
+python run_experiment.py --n-seeds 15 --k-neighbors 3 --out results_k3.csv
+python run_experiment.py --n-seeds 15 --k-neighbors 5 --out results_k5.csv
+python run_experiment.py --n-seeds 15 --k-neighbors 7 --out results_k7.csv
+python run_experiment.py --n-seeds 15 --k-neighbors 10 --out results_k10.csv
 ```
 
-Concatenate the resulting `results_k*.csv` files (they include a
-`k_neighbors` column) before feeding them through `analysis.py` if you
-want the ablation folded into one delta table.
+Compare the resulting CSV files to assess how the size of the performance difference varies with `k_neighbors`.
 
-## Known limitation in the current form
+## Statistical Limitations
 
-The inflation-predictor regression in `analysis.py` is descriptive
-only with three datasets — the design matrix is close to saturated
-(one row per dataset x classifier, only three distinct dataset
-profiles), which `statsmodels` will flag as rank-deficient. Add more
-datasets to `data_loaders.py` before treating the regression
-coefficients as more than a plausibility check. This is exactly the
-kind of limitation to state explicitly in the manuscript rather than
-paper over.
+The inflation-predictor regression is exploratory when based on only three distinct dataset profiles. Its coefficients may be unstable or poorly identified. Additional datasets are needed before drawing strong conclusions from this regression.
 
-## Verified
+## Reproducibility
 
-All scripts have been run end-to-end on a 3-seed smoke test; the
-expected direction of the effect (leaky pipeline reports higher F1 /
-ROC-AUC than correct pipeline) holds across all nine dataset x
-classifier combinations already at that reduced scale.
+Record the dataset versions, random seeds, classifier settings, and SMOTE parameters used for each experiment. Report the results of the full experiment rather than relying exclusively on smoke-test results.
 
-## Citation
+## Citation and Repository
 
-Code and cached data: https://github.com/mikehyderabad200-sys/smote-leakage-quantification
+Original experiment code:
+
+https://github.com/mikehyderabad200-sys/smote-leakage-quantification
