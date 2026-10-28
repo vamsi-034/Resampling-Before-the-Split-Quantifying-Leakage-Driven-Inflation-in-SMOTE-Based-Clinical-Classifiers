@@ -66,8 +66,3 @@ The inflation-predictor regression is exploratory when based on only three disti
 
 Record the dataset versions, random seeds, classifier settings, and SMOTE parameters used for each experiment. Report the results of the full experiment rather than relying exclusively on smoke-test results.
 
-## Citation and Repository
-
-Original experiment code:
-
-https://github.com/mikehyderabad200-sys/smote-leakage-quantification
